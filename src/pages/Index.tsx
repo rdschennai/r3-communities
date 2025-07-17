@@ -72,12 +72,25 @@ const Index = () => {
                 Community Care
               </h1>
             </div>
-            <nav className="hidden md:flex space-x-6">
-              <Button variant="ghost" onClick={() => navigate('/submit')}>Submit Campaign</Button>
-              <Button variant="ghost" onClick={() => navigate('/admin')}>Admin</Button>
-              <Button className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700">
+            <nav className="flex space-x-2 md:space-x-6">
+              <Button variant="ghost" size="sm" className="hidden md:inline-flex" onClick={() => navigate('/submit')}>Submit Campaign</Button>
+              <Button variant="ghost" size="sm" className="hidden md:inline-flex" onClick={() => navigate('/admin')}>Admin</Button>
+              <Button 
+                size="sm" 
+                className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700"
+                onClick={() => {
+                  const element = document.getElementById('community-fund-section');
+                  if (element) {
+                    element.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+              >
                 Support Fund
               </Button>
+              <div className="md:hidden flex space-x-2">
+                <Button variant="ghost" size="sm" onClick={() => navigate('/submit')}>Submit</Button>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/admin')}>Admin</Button>
+              </div>
             </nav>
           </div>
         </div>
@@ -217,7 +230,7 @@ const Index = () => {
       </section>
 
       {/* Community Fund Section */}
-      <section className="py-20 bg-gradient-to-r from-blue-600 to-green-600 text-white">
+      <section id="community-fund-section" className="py-20 bg-gradient-to-r from-blue-600 to-green-600 text-white">
         <div className="container mx-auto px-4 text-center">
           <div className="max-w-3xl mx-auto">
             <Heart className="h-16 w-16 mx-auto mb-6 opacity-90" />
