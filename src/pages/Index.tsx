@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Heart, Users, Zap, ArrowRight, Copy, QrCode } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { RazorpayPayment } from '@/components/RazorpayPayment';
 
 const Index = () => {
   const { toast } = useToast();
@@ -225,25 +226,8 @@ const Index = () => {
               When individual campaigns fall short or urgent cases arise, our community fund steps in. 
               Your contribution helps us respond quickly to emergencies and top-up campaigns that need extra support.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <Button size="lg" variant="secondary" className="bg-white/20 hover:bg-white/30 border-white/30">
-                  ₹100
-                </Button>
-                <Button size="lg" variant="secondary" className="bg-white/20 hover:bg-white/30 border-white/30">
-                  ₹250
-                </Button>
-                <Button size="lg" variant="secondary" className="bg-white/20 hover:bg-white/30 border-white/30">
-                  ₹500
-                </Button>
-                <Button size="lg" variant="secondary" className="bg-white/20 hover:bg-white/30 border-white/30">
-                  ₹1000
-                </Button>
-              </div>
-              <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 font-semibold px-8">
-                Contribute Now
-                <Heart className="ml-2 h-5 w-5 fill-current" />
-              </Button>
+            <div className="bg-white/10 p-8 rounded-2xl backdrop-blur-sm">
+              <RazorpayPayment defaultAmount={500} />
             </div>
           </div>
         </div>

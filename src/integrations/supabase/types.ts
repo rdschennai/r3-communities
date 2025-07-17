@@ -14,7 +14,81 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      campaigns: {
+        Row: {
+          beneficiary_name: string | null
+          created_at: string
+          id: string
+          is_emergency: boolean
+          name: string
+          phone: string
+          photo_url: string | null
+          status: string
+          story: string
+          target_amount: number
+          updated_at: string
+          upi_id: string
+        }
+        Insert: {
+          beneficiary_name?: string | null
+          created_at?: string
+          id?: string
+          is_emergency?: boolean
+          name: string
+          phone: string
+          photo_url?: string | null
+          status?: string
+          story: string
+          target_amount: number
+          updated_at?: string
+          upi_id: string
+        }
+        Update: {
+          beneficiary_name?: string | null
+          created_at?: string
+          id?: string
+          is_emergency?: boolean
+          name?: string
+          phone?: string
+          photo_url?: string | null
+          status?: string
+          story?: string
+          target_amount?: number
+          updated_at?: string
+          upi_id?: string
+        }
+        Relationships: []
+      }
+      donations: {
+        Row: {
+          amount: number
+          created_at: string
+          donor_email: string | null
+          donor_name: string | null
+          id: string
+          razorpay_payment_id: string | null
+          status: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          donor_email?: string | null
+          donor_name?: string | null
+          id?: string
+          razorpay_payment_id?: string | null
+          status?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          donor_email?: string | null
+          donor_name?: string | null
+          id?: string
+          razorpay_payment_id?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
