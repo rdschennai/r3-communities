@@ -204,69 +204,80 @@ const SubmitCampaign = () => {
                       <span className="text-sm font-medium text-purple-700">AI Story Assistant</span>
                     </div>
                     
-                    <div className="space-y-3">
-                      {/* Keywords Input */}
-                      <div className="space-y-2">
-                        <Label htmlFor="keywords" className="text-xs text-gray-600">
-                          Enter keywords to generate story (e.g., "medical emergency, surgery, family support")
-                        </Label>
-                        <Input
-                          id="keywords"
-                          value={keywords}
-                          onChange={(e) => setKeywords(e.target.value)}
-                          placeholder="medical emergency, urgent surgery, financial crisis..."
-                          className="text-sm"
-                        />
-                      </div>
-                      
-                      {/* AI Buttons */}
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => generateStory('keywords')}
-                          disabled={isGenerating || !keywords.trim()}
-                          className="text-xs"
-                        >
-                          {isGenerating ? (
-                            <>
-                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-purple-600 mr-1"></div>
-                              Generating...
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles className="h-3 w-3 mr-1" />
-                              Generate from Keywords
-                            </>
-                          )}
-                        </Button>
+                    {formData.story.trim() ? (
+                      /* Show only generate button when story exists */
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => generateStory('fill')}
+                        disabled={isGenerating}
+                        className="text-xs"
+                      >
+                        {isGenerating ? (
+                          <>
+                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-purple-600 mr-1"></div>
+                            Generating...
+                          </>
+                        ) : (
+                          <>
+                            <Wand2 className="h-3 w-3 mr-1" />
+                            Improve Story with AI
+                          </>
+                        )}
+                      </Button>
+                    ) : (
+                      /* Show keywords input when no story */
+                      <div className="space-y-3">
+                        <div className="space-y-2">
+                          <Label htmlFor="keywords" className="text-xs text-gray-600">
+                            Enter keywords to generate story (e.g., "medical emergency, surgery, family support")
+                          </Label>
+                          <Input
+                            id="keywords"
+                            value={keywords}
+                            onChange={(e) => setKeywords(e.target.value)}
+                            placeholder="medical emergency, urgent surgery, financial crisis..."
+                            className="text-sm"
+                          />
+                        </div>
                         
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => generateStory('fill')}
-                          disabled={isGenerating || !formData.story.trim()}
-                          className="text-xs"
-                        >
-                          <Wand2 className="h-3 w-3 mr-1" />
-                          Complete Story
-                        </Button>
-                        
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => generateStory('generate')}
-                          disabled={isGenerating}
-                          className="text-xs"
-                        >
-                          <Sparkles className="h-3 w-3 mr-1" />
-                          Generate Sample
-                        </Button>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => generateStory('keywords')}
+                            disabled={isGenerating || !keywords.trim()}
+                            className="text-xs"
+                          >
+                            {isGenerating ? (
+                              <>
+                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-purple-600 mr-1"></div>
+                                Generating...
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="h-3 w-3 mr-1" />
+                                Generate from Keywords
+                              </>
+                            )}
+                          </Button>
+                          
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => generateStory('generate')}
+                            disabled={isGenerating}
+                            className="text-xs"
+                          >
+                            <Sparkles className="h-3 w-3 mr-1" />
+                            Generate Sample
+                          </Button>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
 
                   <Textarea
