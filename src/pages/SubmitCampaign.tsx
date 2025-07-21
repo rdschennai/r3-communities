@@ -62,7 +62,7 @@ const SubmitCampaign = () => {
       console.error('Error generating story:', error);
       toast({
         title: "Generation Failed",
-        description: "Please try again or write your story manually.",
+        description: "Please check if OpenAI API key is configured or try again later.",
         variant: "destructive"
       });
     } finally {

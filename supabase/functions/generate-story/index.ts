@@ -15,6 +15,10 @@ serve(async (req) => {
   }
 
   try {
+    if (!openAIApiKey) {
+      throw new Error('OpenAI API key not configured');
+    }
+
     const { keywords, mode, existingStory } = await req.json();
 
     let prompt = '';
@@ -25,16 +29,18 @@ serve(async (req) => {
       Make it authentic and relatable. Focus on the human element and urgency.
       Keep it under 500 characters including spaces.`;
     } else if (mode === 'fill') {
-      prompt = `Complete this fundraising story: "${existingStory}"
-      Make it compelling and emotional while staying under 500 characters total.
+      prompt = `Complete and improve this fundraising story: "${existingStory}"
+      Make it more compelling and emotional while staying under 500 characters total.
       Fill in missing details that would make donors want to help.
-      Keep the existing tone and style.`;
+      Keep the existing tone and style but make it more engaging.`;
     } else {
       prompt = `Write a compelling 400-500 character fundraising story for a medical emergency or personal crisis.
       Make it personal, emotional, and explain the urgent need for financial help.
       Include specific details that make it authentic and relatable.
       Keep it under 500 characters including spaces.`;
     }
+
+    console.log('Making request to OpenAI with prompt:', prompt);
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -47,7 +53,7 @@ serve(async (req) => {
         messages: [
           { 
             role: 'system', 
-            content: 'You are a compassionate storyteller helping people create authentic fundraising stories. Write in first person, be genuine and heartfelt.' 
+            content: 'You are a compassionate storyteller helping people create authentic fundraising stories. Write in first person, be genuine and heartfelt. Always respond with just the story text, nothing else.' 
           },
           { role: 'user', content: prompt }
         ],
@@ -56,13 +62,23 @@ serve(async (req) => {
       }),
     });
 
+    console.log('OpenAI response status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OpenAI API error:', errorText);
+      throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
+    }
+
     const data = await response.json();
+    console.log('OpenAI response data:', JSON.stringify(data, null, 2));
     
-    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+    if (!data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.content) {
+      console.error('Invalid OpenAI response structure:', data);
       throw new Error('Invalid response from OpenAI API');
     }
     
-    const generatedStory = data.choices[0].message.content;
+    const generatedStory = data.choices[0].message.content.trim();
 
     // Ensure story is under 500 characters
     const trimmedStory = generatedStory.length > 500 
