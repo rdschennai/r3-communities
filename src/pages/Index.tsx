@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Heart, Users, Zap, ArrowRight, Copy, QrCode } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import { RazorpayPayment } from '@/components/RazorpayPayment';
+
 
 const Index = () => {
   const { toast } = useToast();
@@ -78,12 +78,7 @@ const Index = () => {
               <Button 
                 size="sm" 
                 className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700"
-                onClick={() => {
-                  const element = document.getElementById('community-fund-section');
-                  if (element) {
-                    element.scrollIntoView({ behavior: 'smooth' });
-                  }
-                }}
+                onClick={() => window.open('https://razorpay.me/@R3Foundation', '_blank')}
               >
                 Support Fund
               </Button>
@@ -230,18 +225,24 @@ const Index = () => {
       </section>
 
       {/* Community Fund Section */}
-      <section id="community-fund-section" className="py-20 bg-gradient-to-r from-blue-600 to-green-600 text-white">
+      <section className="py-20 bg-gradient-to-r from-blue-600 to-green-600 text-white">
         <div className="container mx-auto px-4 text-center">
           <div className="max-w-3xl mx-auto">
             <Heart className="h-16 w-16 mx-auto mb-6 opacity-90" />
-            <h3 className="text-4xl font-bold mb-6">Support Our Emergency Fund</h3>
-            <p className="text-xl mb-8 opacity-90 leading-relaxed">
-              When individual campaigns fall short or urgent cases arise, our community fund steps in. 
-              Your contribution helps us respond quickly to emergencies and top-up campaigns that need extra support.
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">
+              Support Our Community Fund
+            </h2>
+            <p className="text-xl mb-8 opacity-90">
+              Help us support urgent community needs and emergency medical cases. Every donation makes a difference in someone's life.
             </p>
-            <div className="bg-white/10 p-8 rounded-2xl backdrop-blur-sm">
-              <RazorpayPayment defaultAmount={500} />
-            </div>
+            <Button 
+              size="lg"
+              variant="secondary"
+              className="bg-white text-blue-600 hover:bg-gray-100"
+              onClick={() => window.open('https://razorpay.me/@R3Foundation', '_blank')}
+            >
+              Donate Now
+            </Button>
           </div>
         </div>
       </section>
