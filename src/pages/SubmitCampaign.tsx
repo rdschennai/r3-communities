@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import { Heart, ArrowLeft, Upload, IndianRupee, User, Phone, FileText } from 'lucide-react';
+import { Heart, ArrowLeft, Upload, IndianRupee, User, Phone, FileText, Sparkles, Wand2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const SubmitCampaign = () => {
   const { toast } = useToast();
@@ -24,6 +25,8 @@ const SubmitCampaign = () => {
     phoneNumber: '',
     photo: null as File | null
   });
+  const [keywords, setKeywords] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -34,6 +37,36 @@ const SubmitCampaign = () => {
     const file = e.target.files?.[0];
     if (file) {
       setFormData(prev => ({ ...prev, photo: file }));
+    }
+  };
+
+  const generateStory = async (mode: 'keywords' | 'fill' | 'generate') => {
+    setIsGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-story', {
+        body: { 
+          keywords, 
+          mode, 
+          existingStory: formData.story 
+        }
+      });
+
+      if (error) throw error;
+
+      setFormData(prev => ({ ...prev, story: data.story }));
+      toast({
+        title: "Story Generated!",
+        description: "AI has generated a compelling story for your campaign.",
+      });
+    } catch (error) {
+      console.error('Error generating story:', error);
+      toast({
+        title: "Generation Failed",
+        description: "Please try again or write your story manually.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -159,16 +192,89 @@ const SubmitCampaign = () => {
                 </div>
 
                 {/* Story */}
-                <div className="space-y-2">
+                <div className="space-y-4">
                   <Label htmlFor="story" className="text-sm font-medium text-gray-700">
                     Your Story * (Max 500 characters)
                   </Label>
+                  
+                  {/* AI Story Generation Controls */}
+                  <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg border border-purple-200">
+                    <div className="flex items-center mb-3">
+                      <Sparkles className="h-4 w-4 text-purple-600 mr-2" />
+                      <span className="text-sm font-medium text-purple-700">AI Story Assistant</span>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      {/* Keywords Input */}
+                      <div className="space-y-2">
+                        <Label htmlFor="keywords" className="text-xs text-gray-600">
+                          Enter keywords to generate story (e.g., "medical emergency, surgery, family support")
+                        </Label>
+                        <Input
+                          id="keywords"
+                          value={keywords}
+                          onChange={(e) => setKeywords(e.target.value)}
+                          placeholder="medical emergency, urgent surgery, financial crisis..."
+                          className="text-sm"
+                        />
+                      </div>
+                      
+                      {/* AI Buttons */}
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => generateStory('keywords')}
+                          disabled={isGenerating || !keywords.trim()}
+                          className="text-xs"
+                        >
+                          {isGenerating ? (
+                            <>
+                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-purple-600 mr-1"></div>
+                              Generating...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="h-3 w-3 mr-1" />
+                              Generate from Keywords
+                            </>
+                          )}
+                        </Button>
+                        
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => generateStory('fill')}
+                          disabled={isGenerating || !formData.story.trim()}
+                          className="text-xs"
+                        >
+                          <Wand2 className="h-3 w-3 mr-1" />
+                          Complete Story
+                        </Button>
+                        
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => generateStory('generate')}
+                          disabled={isGenerating}
+                          className="text-xs"
+                        >
+                          <Sparkles className="h-3 w-3 mr-1" />
+                          Generate Sample
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
                   <Textarea
                     id="story"
                     name="story"
                     value={formData.story}
                     onChange={handleInputChange}
-                    placeholder="Tell us about your situation and why you need support..."
+                    placeholder="Tell us about your situation and why you need support... or use AI to generate your story above!"
                     className="min-h-32 border-gray-200 focus:border-blue-500 resize-none"
                     maxLength={500}
                     required
