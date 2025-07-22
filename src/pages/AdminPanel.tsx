@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Shield, 
   CheckCircle, 
@@ -28,103 +29,151 @@ const AdminPanel = () => {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loginData, setLoginData] = useState({ username: '', password: '' });
-  const [pendingCampaigns, setPendingCampaigns] = useState([
-    {
-      id: 1,
-      campaignerName: "Amit Verma",
-      beneficiaryName: "Same",
-      story: "Need urgent funds for my mother's cardiac surgery. Local hospital lacks proper equipment and specialist suggested treatment in Delhi. Family exhausted all savings on initial tests and medications.",
-      targetAmount: 75000,
-      upiId: "amit.verma@paytm",
-      phoneNumber: "+91 98765 43210",
-      submittedAt: "2024-01-15",
-      status: "pending"
-    },
-    {
-      id: 2,
-      campaignerName: "Dr. Sarah Khan",
-      beneficiaryName: "Rural Health Center",
-      story: "Medical camp needs portable equipment and medicines for tribal area. 500+ families have no access to basic healthcare. Government approvals ready, just need funding for equipment.",
-      targetAmount: 50000,
-      upiId: "healthcamp.tribal@bhim",
-      phoneNumber: "+91 87654 32109",
-      submittedAt: "2024-01-14",
-      status: "pending"
-    }
-  ]);
+  const [pendingCampaigns, setPendingCampaigns] = useState([]);
+  const [approvedCampaigns, setApprovedCampaigns] = useState([]);
+  const [totalRaised, setTotalRaised] = useState(0);
+  const [loading, setLoading] = useState(false);
 
-  const [approvedCampaigns, setApprovedCampaigns] = useState([
-    {
-      id: 3,
-      campaignerName: "Rajesh Kumar",
-      beneficiaryName: "Same",
-      story: "Father of two needs urgent surgery. Local treatments failed, specialized care required in Mumbai.",
-      targetAmount: 50000,
-      currentAmount: 23000,
-      upiId: "rajesh.kumar@paytm",
-      isEmergency: true,
-      status: "active",
-      approvedAt: "2024-01-10"
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchCampaigns();
+      fetchTotalRaised();
     }
-  ]);
+  }, [isAuthenticated]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const fetchCampaigns = async () => {
+    setLoading(true);
+    try {
+      // Fetch pending campaigns
+      const { data: pending } = await supabase
+        .from('campaigns')
+        .select('*')
+        .eq('status', 'pending');
+
+      // Fetch approved campaigns
+      const { data: approved } = await supabase
+        .from('campaigns')
+        .select('*')
+        .eq('status', 'approved');
+
+      setPendingCampaigns(pending || []);
+      setApprovedCampaigns(approved || []);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch campaigns",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchTotalRaised = async () => {
+    try {
+      const { data } = await supabase
+        .from('donations')
+        .select('amount')
+        .eq('status', 'completed');
+
+      const total = data?.reduce((sum, donation) => sum + Number(donation.amount), 0) || 0;
+      setTotalRaised(total);
+    } catch (error) {
+      console.error('Error fetching total raised:', error);
+    }
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simple authentication - replace with proper auth
-    if (loginData.username === 'admin' && loginData.password === 'admin123') {
+    setLoading(true);
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginData.username,
+        password: loginData.password,
+      });
+
+      if (error) throw error;
+
       setIsAuthenticated(true);
       toast({
         title: "Login Successful",
         description: "Welcome to the admin panel",
       });
-    } else {
+    } catch (error: any) {
       toast({
         title: "Login Failed",
-        description: "Invalid username or password",
+        description: error.message || "Invalid credentials",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCampaignAction = async (campaignId: string, action: 'approve' | 'reject', isEmergency = false) => {
+    try {
+      if (action === 'approve') {
+        const { error } = await supabase
+          .from('campaigns')
+          .update({ 
+            status: 'approved',
+            is_emergency: isEmergency
+          })
+          .eq('id', campaignId);
+
+        if (error) throw error;
+
+        toast({
+          title: "Campaign Approved",
+          description: "Campaign is now live",
+        });
+      } else {
+        const { error } = await supabase
+          .from('campaigns')
+          .update({ status: 'rejected' })
+          .eq('id', campaignId);
+
+        if (error) throw error;
+
+        toast({
+          title: "Campaign Rejected",
+          description: "Campaign has been rejected",
+        });
+      }
+
+      fetchCampaigns();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update campaign",
         variant: "destructive"
       });
     }
   };
 
-  const handleCampaignAction = (campaignId: number, action: 'approve' | 'reject', isEmergency = false) => {
-    const campaign = pendingCampaigns.find(c => c.id === campaignId);
-    if (!campaign) return;
+  const toggleEmergencyStatus = async (campaignId: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('campaigns')
+        .update({ is_emergency: !currentStatus })
+        .eq('id', campaignId);
 
-    if (action === 'approve') {
-      const approvedCampaign = {
-        ...campaign,
-        status: 'active',
-        currentAmount: 0,
-        isEmergency,
-        approvedAt: new Date().toISOString().split('T')[0]
-      };
-      setApprovedCampaigns(prev => [...prev, approvedCampaign]);
+      if (error) throw error;
+
       toast({
-        title: "Campaign Approved",
-        description: `${campaign.campaignerName}'s campaign is now live`,
+        title: "Emergency Status Updated",
+        description: "Campaign priority has been changed",
       });
-    } else {
+
+      fetchCampaigns();
+    } catch (error: any) {
       toast({
-        title: "Campaign Rejected",
-        description: `${campaign.campaignerName}'s campaign has been rejected`,
+        title: "Error",
+        description: error.message || "Failed to update emergency status",
+        variant: "destructive"
       });
     }
-
-    setPendingCampaigns(prev => prev.filter(c => c.id !== campaignId));
-  };
-
-  const toggleEmergencyStatus = (campaignId: number) => {
-    setApprovedCampaigns(prev => 
-      prev.map(campaign => 
-        campaign.id === campaignId 
-          ? { ...campaign, isEmergency: !campaign.isEmergency }
-          : campaign
-      )
-    );
-    toast({
-      title: "Emergency Status Updated",
-      description: "Campaign priority has been changed",
-    });
   };
 
   if (!isAuthenticated) {
@@ -140,12 +189,13 @@ const AdminPanel = () => {
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="username">Email</Label>
                 <Input
                   id="username"
+                  type="email"
                   value={loginData.username}
                   onChange={(e) => setLoginData(prev => ({ ...prev, username: e.target.value }))}
-                  placeholder="Enter username"
+                  placeholder="Enter admin email"
                   required
                 />
               </div>
@@ -160,8 +210,8 @@ const AdminPanel = () => {
                   required
                 />
               </div>
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
-                Login
+              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading}>
+                {loading ? 'Logging in...' : 'Login'}
               </Button>
             </form>
             <div className="mt-4 text-center">
@@ -190,7 +240,10 @@ const AdminPanel = () => {
                 <Heart className="h-4 w-4 mr-2" />
                 View Site
               </Button>
-              <Button variant="outline" onClick={() => setIsAuthenticated(false)}>
+              <Button variant="outline" onClick={async () => {
+                await supabase.auth.signOut();
+                setIsAuthenticated(false);
+              }}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
               </Button>
@@ -232,7 +285,7 @@ const AdminPanel = () => {
                 <div>
                   <p className="text-red-100">Emergency</p>
                   <p className="text-3xl font-bold">
-                    {approvedCampaigns.filter(c => c.isEmergency).length}
+                    {approvedCampaigns.filter(c => c.is_emergency).length}
                   </p>
                 </div>
                 <AlertTriangle className="h-10 w-10 text-red-200" />
@@ -245,7 +298,7 @@ const AdminPanel = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-purple-100">Total Raised</p>
-                  <p className="text-2xl font-bold">₹2.5L+</p>
+                  <p className="text-2xl font-bold">₹{(totalRaised / 100000).toFixed(1)}L</p>
                 </div>
                 <IndianRupee className="h-10 w-10 text-purple-200" />
               </div>
@@ -275,9 +328,9 @@ const AdminPanel = () => {
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <div>
-                        <CardTitle className="text-lg">{campaign.campaignerName}</CardTitle>
-                        <p className="text-gray-600">For: {campaign.beneficiaryName}</p>
-                        <p className="text-sm text-gray-500">Submitted: {campaign.submittedAt}</p>
+                        <CardTitle className="text-lg">{campaign.name}</CardTitle>
+                        <p className="text-gray-600">For: {campaign.beneficiary_name || 'Self'}</p>
+                        <p className="text-sm text-gray-500">Submitted: {new Date(campaign.created_at).toLocaleDateString()}</p>
                       </div>
                       <Badge variant="outline" className="text-orange-600 border-orange-200">
                         <Clock className="h-3 w-3 mr-1" />
@@ -291,15 +344,15 @@ const AdminPanel = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 p-4 rounded-lg">
                       <div>
                         <p className="text-sm text-gray-600">Target Amount</p>
-                        <p className="font-semibold text-green-600">₹{campaign.targetAmount.toLocaleString()}</p>
+                        <p className="font-semibold text-green-600">₹{Number(campaign.target_amount).toLocaleString()}</p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-600">UPI ID</p>
-                        <p className="font-mono text-sm">{campaign.upiId}</p>
+                        <p className="font-mono text-sm">{campaign.upi_id}</p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-600">Contact</p>
-                        <p className="font-mono text-sm">{campaign.phoneNumber}</p>
+                        <p className="font-mono text-sm">{campaign.phone}</p>
                       </div>
                     </div>
 
@@ -357,12 +410,12 @@ const AdminPanel = () => {
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <div>
-                        <CardTitle className="text-lg">{campaign.campaignerName}</CardTitle>
-                        <p className="text-gray-600">For: {campaign.beneficiaryName}</p>
-                        <p className="text-sm text-gray-500">Approved: {campaign.approvedAt}</p>
+                        <CardTitle className="text-lg">{campaign.name}</CardTitle>
+                        <p className="text-gray-600">For: {campaign.beneficiary_name || 'Self'}</p>
+                        <p className="text-sm text-gray-500">Approved: {new Date(campaign.updated_at).toLocaleDateString()}</p>
                       </div>
                       <div className="flex gap-2">
-                        {campaign.isEmergency && (
+                        {campaign.is_emergency && (
                           <Badge className="bg-red-500 hover:bg-red-600">
                             <AlertTriangle className="h-3 w-3 mr-1" />
                             Emergency
@@ -378,37 +431,31 @@ const AdminPanel = () => {
                   <CardContent className="space-y-4">
                     <p className="text-gray-700">{campaign.story}</p>
                     
-                    {/* Progress */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="font-medium text-green-600">₹{campaign.currentAmount?.toLocaleString()}</span>
-                        <span className="text-gray-500">₹{campaign.targetAmount.toLocaleString()}</span>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 p-4 rounded-lg">
+                      <div>
+                        <p className="text-sm text-gray-600">Target Amount</p>
+                        <p className="font-semibold text-green-600">₹{Number(campaign.target_amount).toLocaleString()}</p>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full"
-                          style={{ width: `${Math.min(((campaign.currentAmount || 0) / campaign.targetAmount) * 100, 100)}%` }}
-                        ></div>
+                      <div>
+                        <p className="text-sm text-gray-600">UPI ID</p>
+                        <p className="font-mono text-sm">{campaign.upi_id}</p>
                       </div>
-                      <div className="text-xs text-gray-500">
-                        {Math.round(((campaign.currentAmount || 0) / campaign.targetAmount) * 100)}% funded
+                      <div>
+                        <p className="text-sm text-gray-600">Contact</p>
+                        <p className="font-mono text-sm">{campaign.phone}</p>
                       </div>
                     </div>
 
                     <div className="flex flex-wrap gap-3">
                       <Button 
                         variant="outline"
-                        onClick={() => toggleEmergencyStatus(campaign.id)}
-                        className={campaign.isEmergency ? "border-red-200 text-red-600" : "border-orange-200 text-orange-600"}
+                        onClick={() => toggleEmergencyStatus(campaign.id, campaign.is_emergency)}
+                        className={campaign.is_emergency ? "border-red-200 text-red-600" : "border-orange-200 text-orange-600"}
                       >
                         <AlertTriangle className="h-4 w-4 mr-2" />
-                        {campaign.isEmergency ? 'Remove Emergency' : 'Mark Emergency'}
+                        {campaign.is_emergency ? 'Remove Emergency' : 'Mark Emergency'}
                       </Button>
-                      <Button variant="outline">
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit
-                      </Button>
-                      <Button variant="outline">
+                      <Button variant="outline" onClick={() => navigate(`/campaign/${campaign.id}`)}>
                         <Eye className="h-4 w-4 mr-2" />
                         View Public
                       </Button>
