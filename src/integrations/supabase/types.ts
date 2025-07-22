@@ -28,6 +28,7 @@ export type Database = {
           target_amount: number
           updated_at: string
           upi_id: string
+          user_id: string | null
         }
         Insert: {
           beneficiary_name?: string | null
@@ -42,6 +43,7 @@ export type Database = {
           target_amount: number
           updated_at?: string
           upi_id: string
+          user_id?: string | null
         }
         Update: {
           beneficiary_name?: string | null
@@ -56,6 +58,7 @@ export type Database = {
           target_amount?: number
           updated_at?: string
           upi_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -86,6 +89,36 @@ export type Database = {
           id?: string
           razorpay_payment_id?: string | null
           status?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
