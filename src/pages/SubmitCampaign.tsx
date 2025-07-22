@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,10 +9,13 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { Heart, ArrowLeft, Upload, IndianRupee, User, Phone, FileText, Sparkles, Wand2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 
 const SubmitCampaign = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     campaignerName: '',
@@ -27,6 +30,32 @@ const SubmitCampaign = () => {
   });
   const [keywords, setKeywords] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+
+  useEffect(() => {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (!session?.user) {
+          navigate('/auth');
+        }
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (!session?.user) {
+        navigate('/auth');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -72,11 +101,38 @@ const SubmitCampaign = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to submit a campaign.",
+        variant: "destructive"
+      });
+      navigate('/auth');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      // Simulate API call - replace with actual Supabase integration
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Prepare campaign data
+      const campaignData = {
+        name: formData.campaignerName,
+        beneficiary_name: formData.beneficiaryName || formData.campaignerName,
+        story: formData.story,
+        target_amount: parseFloat(formData.targetAmount),
+        upi_id: formData.upiId || `${formData.bankAccount}-${formData.ifscCode}`,
+        phone: formData.phoneNumber,
+        user_id: user.id,
+        status: 'pending',
+        is_emergency: false
+      };
+
+      const { error } = await supabase
+        .from('campaigns')
+        .insert([campaignData]);
+
+      if (error) throw error;
       
       toast({
         title: "Campaign Submitted Successfully!",
@@ -99,10 +155,11 @@ const SubmitCampaign = () => {
       // Redirect to home after a delay
       setTimeout(() => navigate('/'), 1500);
       
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Campaign submission error:', error);
       toast({
         title: "Submission Failed",
-        description: "Please try again or contact support if the problem persists.",
+        description: error.message || "Please try again or contact support if the problem persists.",
         variant: "destructive"
       });
     } finally {

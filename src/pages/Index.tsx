@@ -3,14 +3,18 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Heart, Users, Zap, ArrowRight, Copy, QrCode } from 'lucide-react';
+import { Heart, Users, Zap, ArrowRight, Copy, QrCode, LogOut, LogIn } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { User, Session } from '@supabase/supabase-js';
 
 
 const Index = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [featuredCampaigns] = useState([
     {
       id: 1,
@@ -47,6 +51,40 @@ const Index = () => {
     }
   ]);
 
+  useEffect(() => {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sign out",
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Signed Out",
+        description: "You have been signed out successfully"
+      });
+    }
+  };
+
   const copyUpiId = (upiId: string, campaignName: string) => {
     navigator.clipboard.writeText(upiId);
     toast({
@@ -72,9 +110,31 @@ const Index = () => {
                 Community Care
               </h1>
             </div>
-            <nav className="flex space-x-2 md:space-x-6">
-              <Button variant="ghost" size="sm" className="hidden md:inline-flex" onClick={() => navigate('/submit')}>Submit Campaign</Button>
-              <Button variant="ghost" size="sm" className="hidden md:inline-flex" onClick={() => navigate('/admin')}>Admin</Button>
+            <nav className="flex space-x-2 md:space-x-6 items-center">
+              {user ? (
+                <>
+                  <Button variant="ghost" size="sm" className="hidden md:inline-flex" onClick={() => navigate('/submit')}>Submit Campaign</Button>
+                  <Button variant="ghost" size="sm" className="hidden md:inline-flex" onClick={() => navigate('/admin')}>Admin</Button>
+                  <span className="text-sm text-gray-600 hidden md:inline">Welcome, {user.email}</span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={handleSignOut}
+                  >
+                    <LogOut className="h-4 w-4 mr-1" />
+                    Sign Out
+                  </Button>
+                </>
+              ) : (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => navigate('/auth')}
+                >
+                  <LogIn className="h-4 w-4 mr-1" />
+                  Login
+                </Button>
+              )}
               <Button 
                 size="sm" 
                 className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700"
@@ -82,10 +142,12 @@ const Index = () => {
               >
                 Support Fund
               </Button>
-              <div className="md:hidden flex space-x-2">
-                <Button variant="ghost" size="sm" onClick={() => navigate('/submit')}>Submit</Button>
-                <Button variant="ghost" size="sm" onClick={() => navigate('/admin')}>Admin</Button>
-              </div>
+              {user && (
+                <div className="md:hidden flex space-x-2">
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/submit')}>Submit</Button>
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/admin')}>Admin</Button>
+                </div>
+              )}
             </nav>
           </div>
         </div>
@@ -106,9 +168,9 @@ const Index = () => {
               <Button 
                 size="lg" 
                 className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-lg px-8 py-3"
-                onClick={() => navigate('/submit')}
+                onClick={() => user ? navigate('/submit') : navigate('/auth')}
               >
-                Share Your Story
+                {user ? 'Share Your Story' : 'Login to Share Story'}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
               <Button 
