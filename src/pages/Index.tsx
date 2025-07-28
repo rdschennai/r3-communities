@@ -111,10 +111,10 @@ const Index = () => {
               </h1>
             </div>
             <nav className="flex space-x-2 md:space-x-6 items-center">
+              <Button variant="ghost" size="sm" className="hidden md:inline-flex" onClick={() => navigate('/admin')}>Admin</Button>
               {user ? (
                 <>
                   <Button variant="ghost" size="sm" className="hidden md:inline-flex" onClick={() => navigate('/submit')}>Submit Campaign</Button>
-                  <Button variant="ghost" size="sm" className="hidden md:inline-flex" onClick={() => navigate('/admin')}>Admin</Button>
                   <span className="text-sm text-gray-600 hidden md:inline">Welcome, {user.email}</span>
                   <Button 
                     variant="ghost" 
@@ -142,12 +142,12 @@ const Index = () => {
               >
                 Support Fund
               </Button>
-              {user && (
-                <div className="md:hidden flex space-x-2">
+              <div className="md:hidden flex space-x-2">
+                <Button variant="ghost" size="sm" onClick={() => navigate('/admin')}>Admin</Button>
+                {user && (
                   <Button variant="ghost" size="sm" onClick={() => navigate('/submit')}>Submit</Button>
-                  <Button variant="ghost" size="sm" onClick={() => navigate('/admin')}>Admin</Button>
-                </div>
-              )}
+                )}
+              </div>
             </nav>
           </div>
         </div>

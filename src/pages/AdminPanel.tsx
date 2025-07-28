@@ -35,6 +35,14 @@ const AdminPanel = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // Check authentication status when component mounts
+    const adminAuth = localStorage.getItem('adminAuthenticated');
+    if (adminAuth === 'true') {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  useEffect(() => {
     if (isAuthenticated) {
       fetchCampaigns();
       fetchTotalRaised();
@@ -88,27 +96,38 @@ const AdminPanel = () => {
     setLoading(true);
     
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: loginData.username,
-        password: loginData.password,
-      });
-
-      if (error) throw error;
-
-      setIsAuthenticated(true);
-      toast({
-        title: "Login Successful",
-        description: "Welcome to the admin panel",
-      });
+      if (loginData.username === 'admin' && loginData.password === 'admin123') {
+        localStorage.setItem('adminAuthenticated', 'true');
+        setIsAuthenticated(true);
+        toast({
+          title: "Login Successful",
+          description: "Welcome to the admin panel",
+        });
+      } else {
+        toast({
+          title: "Login Failed",
+          description: "Invalid admin credentials",
+          variant: "destructive"
+        });
+      }
     } catch (error: any) {
       toast({
         title: "Login Failed",
-        description: error.message || "Invalid credentials",
+        description: "An unexpected error occurred",
         variant: "destructive"
       });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('adminAuthenticated');
+    setIsAuthenticated(false);
+    toast({
+      title: "Logged Out",
+      description: "Admin session ended"
+    });
   };
 
   const handleCampaignAction = async (campaignId: string, action: 'approve' | 'reject', isEmergency = false) => {
@@ -189,13 +208,13 @@ const AdminPanel = () => {
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Email</Label>
+                <Label htmlFor="username">Username</Label>
                 <Input
                   id="username"
-                  type="email"
+                  type="text"
                   value={loginData.username}
                   onChange={(e) => setLoginData(prev => ({ ...prev, username: e.target.value }))}
-                  placeholder="Enter admin email"
+                  placeholder="Enter username"
                   required
                 />
               </div>
@@ -240,10 +259,7 @@ const AdminPanel = () => {
                 <Heart className="h-4 w-4 mr-2" />
                 View Site
               </Button>
-              <Button variant="outline" onClick={async () => {
-                await supabase.auth.signOut();
-                setIsAuthenticated(false);
-              }}>
+              <Button variant="outline" onClick={handleLogout}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
               </Button>
