@@ -9,47 +9,37 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 
+interface Campaign {
+  id: string;
+  name: string;
+  beneficiary_name: string | null;
+  story: string;
+  target_amount: number;
+  upi_id: string;
+  is_emergency: boolean;
+  photo_url: string | null;
+  created_at: string;
+}
+
+interface Stats {
+  totalCampaigns: number;
+  totalRaised: number;
+  successRate: number;
+}
+
 
 const Index = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [featuredCampaigns] = useState([
-    {
-      id: 1,
-      name: "Help Rajesh's Medical Treatment",
-      beneficiary: "Rajesh Kumar",
-      story: "Father of two needs urgent surgery. Local treatments failed, specialized care required in Mumbai. Family struggling with medical bills.",
-      target: 50000,
-      raised: 23000,
-      upiId: "rajesh.kumar@paytm",
-      isEmergency: true,
-      image: "/placeholder.svg"
-    },
-    {
-      id: 2,
-      name: "Education Fund for Priya",
-      beneficiary: "Priya Sharma",
-      story: "Brilliant student from rural area got admission to engineering college but family cannot afford fees. Dreams of becoming software engineer.",
-      target: 25000,
-      raised: 8500,
-      upiId: "priya.education@gpay",
-      isEmergency: false,
-      image: "/placeholder.svg"
-    },
-    {
-      id: 3,
-      name: "Flood Relief for Village",
-      beneficiary: "Gram Panchayat Shivpur",
-      story: "Recent floods destroyed 50+ homes. Community needs immediate relief supplies, temporary shelter materials, and clean water facilities.",
-      target: 75000,
-      raised: 45000,
-      upiId: "relief.shivpur@bhim",
-      isEmergency: true,
-      image: "/placeholder.svg"
-    }
-  ]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [stats, setStats] = useState<Stats>({
+    totalCampaigns: 0,
+    totalRaised: 0,
+    successRate: 0
+  });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Set up auth state listener
@@ -66,8 +56,63 @@ const Index = () => {
       setUser(session?.user ?? null);
     });
 
+    // Load campaigns and stats
+    loadCampaigns();
+    loadStats();
+
     return () => subscription.unsubscribe();
   }, []);
+
+  const loadCampaigns = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('campaigns')
+        .select('*')
+        .eq('status', 'approved')
+        .order('is_emergency', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(6);
+
+      if (error) throw error;
+      setCampaigns(data || []);
+    } catch (error) {
+      console.error('Error loading campaigns:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load campaigns",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadStats = async () => {
+    try {
+      // Get total campaigns
+      const { count: totalCampaigns } = await supabase
+        .from('campaigns')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'approved');
+
+      // Get total raised (this would need a donations table to be accurate)
+      // For now, we'll use a placeholder or calculate from campaign data
+      const { data: donations } = await supabase
+        .from('donations')
+        .select('amount')
+        .eq('status', 'completed');
+
+      const totalRaised = donations?.reduce((sum, donation) => sum + Number(donation.amount), 0) || 0;
+
+      setStats({
+        totalCampaigns: totalCampaigns || 0,
+        totalRaised,
+        successRate: totalCampaigns > 0 ? Math.round((totalCampaigns / (totalCampaigns + 1)) * 100) : 0
+      });
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    }
+  };
 
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
@@ -229,15 +274,15 @@ const Index = () => {
         <div className="container mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 text-center">
             <div className="space-y-1 sm:space-y-2">
-              <div className="text-3xl sm:text-4xl font-bold text-blue-600">150+</div>
-              <div className="text-sm sm:text-base text-gray-600">Lives Impacted</div>
+              <div className="text-3xl sm:text-4xl font-bold text-blue-600">{stats.totalCampaigns}+</div>
+              <div className="text-sm sm:text-base text-gray-600">Active Campaigns</div>
             </div>
             <div className="space-y-1 sm:space-y-2">
-              <div className="text-3xl sm:text-4xl font-bold text-green-600">₹2.5L+</div>
+              <div className="text-3xl sm:text-4xl font-bold text-green-600">₹{stats.totalRaised > 0 ? (stats.totalRaised / 100000).toFixed(1) + 'L' : '0'}</div>
               <div className="text-sm sm:text-base text-gray-600">Funds Raised</div>
             </div>
             <div className="space-y-1 sm:space-y-2">
-              <div className="text-3xl sm:text-4xl font-bold text-purple-600">95%</div>
+              <div className="text-3xl sm:text-4xl font-bold text-purple-600">{stats.successRate}%</div>
               <div className="text-sm sm:text-base text-gray-600">Success Rate</div>
             </div>
           </div>
@@ -248,79 +293,88 @@ const Index = () => {
       <section className="py-12 sm:py-16">
         <div className="container mx-auto px-4 sm:px-6">
           <div className="text-center mb-8 sm:mb-12">
-            <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 sm:mb-4 text-gray-800">Urgent Stories</h3>
-            <p className="text-base sm:text-lg md:text-xl text-gray-600">These campaigns need your immediate support</p>
+            <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 sm:mb-4 text-gray-800">Active Campaigns</h3>
+            <p className="text-base sm:text-lg md:text-xl text-gray-600">Support these verified campaigns in need</p>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-            {featuredCampaigns.map((campaign) => (
-              <Card key={campaign.id} className="overflow-hidden hover:shadow-xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm">
-                <div className="relative">
-                  <img 
-                    src={campaign.image} 
-                    alt={campaign.name}
-                    className="w-full h-40 sm:h-48 object-cover"
-                  />
-                  {campaign.isEmergency && (
-                    <Badge className="absolute top-2 sm:top-4 left-2 sm:left-4 bg-red-500 hover:bg-red-600 text-xs">
-                      <Zap className="h-3 w-3 mr-1" />
-                      Urgent
-                    </Badge>
-                  )}
-                </div>
-                
-                <CardHeader className="p-3 sm:p-6">
-                  <CardTitle className="text-base sm:text-lg font-semibold text-gray-800 leading-tight">{campaign.name}</CardTitle>
-                  <p className="text-xs sm:text-sm text-gray-600">For: {campaign.beneficiary}</p>
-                </CardHeader>
-                
-                <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-6 pt-0">
-                  <p className="text-gray-700 text-xs sm:text-sm leading-relaxed">{campaign.story}</p>
-                  
-                  {/* Progress Bar */}
-                  <div className="space-y-1 sm:space-y-2">
-                    <div className="flex justify-between text-xs sm:text-sm">
-                      <span className="font-medium text-green-600">₹{campaign.raised.toLocaleString()}</span>
-                      <span className="text-gray-500">₹{campaign.target.toLocaleString()}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full transition-all duration-500"
-                        style={{ width: `${Math.min((campaign.raised / campaign.target) * 100, 100)}%` }}
-                      ></div>
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {Math.round((campaign.raised / campaign.target) * 100)}% funded
-                    </div>
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="text-gray-600">Loading campaigns...</div>
+            </div>
+          ) : campaigns.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-gray-600">No active campaigns at the moment.</div>
+              <Button 
+                className="mt-4"
+                onClick={() => user ? navigate('/submit') : navigate('/auth')}
+              >
+                {user ? 'Submit a Campaign' : 'Login to Submit Campaign'}
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+              {campaigns.map((campaign) => (
+                <Card key={campaign.id} className="overflow-hidden hover:shadow-xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm">
+                  <div className="relative">
+                    <img 
+                      src={campaign.photo_url || "/placeholder.svg"} 
+                      alt={campaign.name}
+                      className="w-full h-40 sm:h-48 object-cover"
+                    />
+                    {campaign.is_emergency && (
+                      <Badge className="absolute top-2 sm:top-4 left-2 sm:left-4 bg-red-500 hover:bg-red-600 text-xs">
+                        <Zap className="h-3 w-3 mr-1" />
+                        Urgent
+                      </Badge>
+                    )}
                   </div>
                   
-                  {/* UPI Payment Section */}
-                  <div className="bg-blue-50 p-3 sm:p-4 rounded-lg space-y-2 sm:space-y-3">
-                    <div className="text-xs sm:text-sm font-medium text-blue-800 break-all">UPI ID: {campaign.upiId}</div>
-                    <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        className="flex-1 border-blue-200 text-blue-700 hover:bg-blue-100 text-xs sm:text-sm"
-                        onClick={() => copyUpiId(campaign.upiId, campaign.name)}
-                      >
-                        <Copy className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                        Copy UPI
-                      </Button>
-                      <Button 
-                        size="sm"
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm"
-                        onClick={() => openUpiApp(campaign.upiId, 100, campaign.beneficiary)}
-                      >
-                        <QrCode className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                        Pay ₹100
-                      </Button>
+                  <CardHeader className="p-3 sm:p-6">
+                    <CardTitle className="text-base sm:text-lg font-semibold text-gray-800 leading-tight">{campaign.name}</CardTitle>
+                    {campaign.beneficiary_name && (
+                      <p className="text-xs sm:text-sm text-gray-600">For: {campaign.beneficiary_name}</p>
+                    )}
+                  </CardHeader>
+                  
+                  <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-6 pt-0">
+                    <p className="text-gray-700 text-xs sm:text-sm leading-relaxed line-clamp-3">{campaign.story}</p>
+                    
+                    {/* Target Amount Display */}
+                    <div className="space-y-1 sm:space-y-2">
+                      <div className="flex justify-between text-xs sm:text-sm">
+                        <span className="font-medium text-blue-600">Target Amount</span>
+                        <span className="text-gray-500">₹{Number(campaign.target_amount).toLocaleString()}</span>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                    
+                    {/* UPI Payment Section */}
+                    <div className="bg-blue-50 p-3 sm:p-4 rounded-lg space-y-2 sm:space-y-3">
+                      <div className="text-xs sm:text-sm font-medium text-blue-800 break-all">UPI ID: {campaign.upi_id}</div>
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          className="flex-1 border-blue-200 text-blue-700 hover:bg-blue-100 text-xs sm:text-sm"
+                          onClick={() => copyUpiId(campaign.upi_id, campaign.name)}
+                        >
+                          <Copy className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                          Copy UPI
+                        </Button>
+                        <Button 
+                          size="sm"
+                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm"
+                          onClick={() => openUpiApp(campaign.upi_id, 100, campaign.beneficiary_name || 'Beneficiary')}
+                        >
+                          <QrCode className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                          Pay ₹100
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
