@@ -386,6 +386,7 @@ const Index = () => {
                           campaignName={campaign.name}
                           targetAmount={Number(campaign.target_amount)}
                           onDonationSubmitted={loadCampaigns}
+                          showIPaidButton={true}
                         />
                       </div>
                     </div>

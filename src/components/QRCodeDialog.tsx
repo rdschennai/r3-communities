@@ -14,9 +14,10 @@ interface QRCodeDialogProps {
   campaignName: string;
   targetAmount: number;
   onDonationSubmitted: () => void;
+  showIPaidButton?: boolean;
 }
 
-const QRCodeDialog = ({ campaignId, campaignName, targetAmount, onDonationSubmitted }: QRCodeDialogProps) => {
+const QRCodeDialog = ({ campaignId, campaignName, targetAmount, onDonationSubmitted, showIPaidButton = false }: QRCodeDialogProps) => {
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [showDonationForm, setShowDonationForm] = useState(false);
   const [donationAmount, setDonationAmount] = useState<string>('');
@@ -170,16 +171,17 @@ const QRCodeDialog = ({ campaignId, campaignName, targetAmount, onDonationSubmit
   };
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button 
-          size="sm"
-          className="flex-1 bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm"
-        >
-          <QrCode className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-          Pay via QR
-        </Button>
-      </DialogTrigger>
+    <>
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button 
+            size="sm"
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm"
+          >
+            <QrCode className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+            Pay via QR
+          </Button>
+        </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Pay via UPI QR Code</DialogTitle>
@@ -203,23 +205,14 @@ const QRCodeDialog = ({ campaignId, campaignName, targetAmount, onDonationSubmit
                     className="border rounded-lg shadow-sm"
                   />
                   
-                  <div className="flex gap-2 w-full">
-                    <Button 
-                      onClick={downloadQRCode}
-                      variant="outline"
-                      className="flex-1"
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Download QR
-                    </Button>
-                    <Button 
-                      onClick={() => setShowDonationForm(true)}
-                      className="flex-1"
-                    >
-                      <Check className="h-4 w-4 mr-2" />
-                      I Paid
-                    </Button>
-                  </div>
+                  <Button 
+                    onClick={downloadQRCode}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download QR
+                  </Button>
                 </div>
               )}
             </div>
@@ -314,6 +307,104 @@ const QRCodeDialog = ({ campaignId, campaignName, targetAmount, onDonationSubmit
         )}
       </DialogContent>
     </Dialog>
+    
+    {showIPaidButton && (
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button 
+            size="sm"
+            className="flex-1 bg-green-600 hover:bg-green-700 text-xs sm:text-sm"
+          >
+            <Check className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+            I Paid
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Submit Your Donation</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="text-center">
+              <p className="text-sm text-gray-600 mb-4">
+                Please provide your donation details
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="amount">Donation Amount (₹) *</Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  placeholder="Enter amount donated"
+                  value={donationAmount}
+                  onChange={(e) => setDonationAmount(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="mobile">Mobile Number *</Label>
+                <Input
+                  id="mobile"
+                  type="tel"
+                  placeholder="Enter your mobile number"
+                  value={donorMobile}
+                  onChange={(e) => setDonorMobile(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="name">Name (Optional)</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="Enter your name"
+                  value={donorName}
+                  onChange={(e) => setDonorName(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="screenshot">Payment Screenshot (Optional)</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="screenshot"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleScreenshotUpload}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById('screenshot')?.click()}
+                    className="flex-1"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    {screenshot ? 'Change Screenshot' : 'Upload Screenshot'}
+                  </Button>
+                </div>
+                {screenshot && (
+                  <p className="text-xs text-green-600 mt-1">
+                    Screenshot selected: {screenshot.name}
+                  </p>
+                )}
+              </div>
+
+              <Button
+                onClick={submitDonation}
+                disabled={isSubmitting}
+                className="w-full"
+              >
+                {isSubmitting ? 'Submitting...' : 'Submit Donation'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    )}
+  </>
   );
 };
 
