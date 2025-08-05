@@ -3,11 +3,13 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Heart, Users, Zap, ArrowRight, Copy, QrCode, LogOut, LogIn } from 'lucide-react';
+import { Heart, Users, Zap, ArrowRight, Copy, LogOut, LogIn } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
+import QRCodeDialog from '@/components/QRCodeDialog';
+import ImageGenerator from '@/components/ImageGenerator';
 
 interface Campaign {
   id: string;
@@ -347,27 +349,44 @@ const Index = () => {
                       </div>
                     </div>
                     
+                    {/* Auto Generate Image if not available */}
+                    {!campaign.photo_url && (
+                      <div className="mb-3">
+                        <ImageGenerator 
+                          prompt={campaign.story}
+                          onImageGenerated={(imageUrl) => {
+                            // Update the campaign in state temporarily for display
+                            setCampaigns(prev => prev.map(c => 
+                              c.id === campaign.id 
+                                ? { ...c, photo_url: imageUrl }
+                                : c
+                            ));
+                          }}
+                        />
+                      </div>
+                    )}
+                    
                     {/* UPI Payment Section */}
                     <div className="bg-blue-50 p-3 sm:p-4 rounded-lg space-y-2 sm:space-y-3">
-                      <div className="text-xs sm:text-sm font-medium text-blue-800 break-all">UPI ID: {campaign.upi_id}</div>
+                      <div className="text-xs sm:text-sm font-medium text-blue-800">
+                        Custom Amount Donation via UPI
+                      </div>
                       <div className="flex gap-2">
                         <Button 
                           size="sm" 
                           variant="outline"
                           className="flex-1 border-blue-200 text-blue-700 hover:bg-blue-100 text-xs sm:text-sm"
-                          onClick={() => copyUpiId(campaign.upi_id, campaign.name)}
+                          onClick={() => copyUpiId("rajee1924-2@okicici", campaign.name)}
                         >
                           <Copy className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                           Copy UPI
                         </Button>
-                        <Button 
-                          size="sm"
-                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm"
-                          onClick={() => openUpiApp(campaign.upi_id, 100, campaign.beneficiary_name || 'Beneficiary')}
-                        >
-                          <QrCode className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                          Pay ₹100
-                        </Button>
+                        <QRCodeDialog
+                          campaignId={campaign.id}
+                          campaignName={campaign.name}
+                          targetAmount={Number(campaign.target_amount)}
+                          onDonationSubmitted={loadCampaigns}
+                        />
                       </div>
                     </div>
                   </CardContent>
