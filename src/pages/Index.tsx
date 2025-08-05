@@ -154,7 +154,7 @@ const Index = () => {
             <div className="flex items-center space-x-1 sm:space-x-2">
               <Heart className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 fill-current" />
               <h1 className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
-                Community Care
+                R3 Community
               </h1>
             </div>
             <nav className="flex items-center gap-1 sm:gap-2">
@@ -243,11 +243,11 @@ const Index = () => {
         <div className="container mx-auto px-4 sm:px-6">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 sm:mb-6 bg-gradient-to-r from-blue-700 via-purple-600 to-green-600 bg-clip-text text-transparent leading-tight">
-              Together We Build Dreams
+              Real people, real action, real change
             </h2>
             <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8 leading-relaxed px-2">
-              A community-driven platform where every story matters. Support individual campaigns directly 
-              or contribute to our emergency fund that helps urgent cases across the community.
+              Help together to financially support illness critical situation by debt crisis, education, medical emergency needs. 
+              Save someone's life with a small contribution of a price of a cup of coffee...
             </p>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4 sm:px-0">
               <Button 
@@ -428,7 +428,7 @@ const Index = () => {
             <div className="text-center sm:text-left">
               <div className="flex items-center justify-center sm:justify-start space-x-2 mb-4">
                 <Heart className="h-5 w-5 sm:h-6 sm:w-6 fill-current text-blue-400" />
-                <span className="text-lg sm:text-xl font-bold">Community Care</span>
+                <span className="text-lg sm:text-xl font-bold">R3 Community</span>
               </div>
               <p className="text-gray-400 text-sm sm:text-base">
                 Building a stronger community through collective support and shared compassion.
@@ -452,7 +452,7 @@ const Index = () => {
             </div>
           </div>
           <div className="border-t border-gray-800 mt-6 sm:mt-8 pt-6 sm:pt-8 text-center text-gray-400">
-            <p className="text-xs sm:text-sm">&copy; 2024 Community Care. Building dreams together.</p>
+            <p className="text-xs sm:text-sm">&copy; 2024 R3 Community. Real people, real action, real change.</p>
           </div>
         </div>
       </footer>

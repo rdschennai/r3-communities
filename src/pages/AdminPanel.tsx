@@ -21,8 +21,10 @@ import {
   Edit,
   ExternalLink,
   LogOut,
-  Heart
+  Heart,
+  ImageIcon
 } from 'lucide-react';
+import ImageGenerator from '@/components/ImageGenerator';
 
 const AdminPanel = () => {
   const { toast } = useToast();
@@ -372,6 +374,32 @@ const AdminPanel = () => {
                       </div>
                     </div>
 
+                    {/* Image Generation Section */}
+                    {!campaign.photo_url && (
+                      <div className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg border border-green-200">
+                        <div className="flex items-center mb-3">
+                          <ImageIcon className="h-4 w-4 text-green-600 mr-2" />
+                          <span className="text-sm font-medium text-green-700">Generate Campaign Image</span>
+                        </div>
+                        <ImageGenerator 
+                          prompt={campaign.story}
+                          onImageGenerated={(imageUrl) => {
+                            // Update campaign with generated image URL
+                            supabase.from('campaigns')
+                              .update({ photo_url: imageUrl })
+                              .eq('id', campaign.id)
+                              .then(() => {
+                                toast({
+                                  title: "Image Generated",
+                                  description: "Campaign image has been generated and saved"
+                                });
+                                fetchCampaigns();
+                              });
+                          }}
+                        />
+                      </div>
+                    )}
+
                     <div className="flex flex-wrap gap-3 pt-4">
                       <Button 
                         onClick={() => handleCampaignAction(campaign.id, 'approve', false)}
@@ -461,6 +489,32 @@ const AdminPanel = () => {
                         <p className="font-mono text-sm">{campaign.phone}</p>
                       </div>
                     </div>
+
+                    {/* Image Generation for Active Campaigns */}
+                    {!campaign.photo_url && (
+                      <div className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg border border-green-200 mb-4">
+                        <div className="flex items-center mb-3">
+                          <ImageIcon className="h-4 w-4 text-green-600 mr-2" />
+                          <span className="text-sm font-medium text-green-700">Generate Campaign Image</span>
+                        </div>
+                        <ImageGenerator 
+                          prompt={campaign.story}
+                          onImageGenerated={(imageUrl) => {
+                            // Update campaign with generated image URL
+                            supabase.from('campaigns')
+                              .update({ photo_url: imageUrl })
+                              .eq('id', campaign.id)
+                              .then(() => {
+                                toast({
+                                  title: "Image Generated",
+                                  description: "Campaign image has been generated and saved"
+                                });
+                                fetchCampaigns();
+                              });
+                          }}
+                        />
+                      </div>
+                    )}
 
                     <div className="flex flex-wrap gap-3">
                       <Button 

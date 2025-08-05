@@ -7,9 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import { Heart, ArrowLeft, Upload, IndianRupee, User, Phone, FileText, Sparkles, Wand2 } from 'lucide-react';
+import { Heart, ArrowLeft, Upload, IndianRupee, User, Phone, FileText, Sparkles, Wand2, ImageIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
+import ImageGenerator from '@/components/ImageGenerator';
 
 const SubmitCampaign = () => {
   const { toast } = useToast();
@@ -30,6 +31,7 @@ const SubmitCampaign = () => {
   });
   const [keywords, setKeywords] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedImageUrl, setGeneratedImageUrl] = useState('');
 
   useEffect(() => {
     // Set up auth state listener
@@ -183,7 +185,7 @@ const SubmitCampaign = () => {
             </Button>
             <div className="flex items-center space-x-2">
               <Heart className="h-6 w-6 text-blue-600 fill-current" />
-              <span className="text-xl font-bold text-gray-800">Community Care</span>
+              <span className="text-xl font-bold text-gray-800">R3 Community</span>
             </div>
           </div>
         </div>
@@ -445,14 +447,34 @@ const SubmitCampaign = () => {
                 </div>
 
                 {/* Photo Upload */}
-                <div className="space-y-2">
-                  <Label htmlFor="photo" className="text-sm font-medium text-gray-700">
-                    Photo (Optional)
+                <div className="space-y-4">
+                  <Label className="text-sm font-medium text-gray-700">
+                    Campaign Photo (Optional)
                   </Label>
+                  
+                  {/* AI Image Generation */}
+                  <div className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg border border-green-200">
+                    <div className="flex items-center mb-3">
+                      <ImageIcon className="h-4 w-4 text-green-600 mr-2" />
+                      <span className="text-sm font-medium text-green-700">AI Image Generator</span>
+                    </div>
+                    {formData.story.trim() ? (
+                      <ImageGenerator 
+                        prompt={formData.story}
+                        onImageGenerated={(imageUrl) => setGeneratedImageUrl(imageUrl)}
+                      />
+                    ) : (
+                      <p className="text-xs text-gray-600">
+                        Write your story first to generate a relevant image automatically
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Manual Upload */}
                   <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center hover:border-blue-300 transition-colors">
                     <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
                     <div className="text-sm text-gray-600 mb-2">
-                      Click to upload or drag and drop
+                      Or upload your own photo
                     </div>
                     <Input
                       id="photo"
@@ -475,6 +497,18 @@ const SubmitCampaign = () => {
                       </div>
                     )}
                   </div>
+
+                  {/* Preview Generated Image */}
+                  {generatedImageUrl && (
+                    <div className="border rounded-lg p-4 bg-gray-50">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Generated Image Preview:</p>
+                      <img 
+                        src={generatedImageUrl} 
+                        alt="Generated campaign image" 
+                        className="w-full h-32 object-cover rounded-lg"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Submit Button */}
